@@ -1,5 +1,7 @@
 package com.example.main.model.dto;
 
+import java.util.Date;
+
 public class RoomFilterDTO {
     private String type;
     private Boolean guestFavorite;
@@ -8,8 +10,10 @@ public class RoomFilterDTO {
     private Integer capacity;
     private int page;
     private int size;
+    private Date startDate;
+    private Date endDate;
 
-    public RoomFilterDTO(String type, Boolean guestFavorite, Double minPrice, Double maxPrice, Integer capacity, int page, int size) {
+    public RoomFilterDTO(String type, Boolean guestFavorite, Double minPrice, Double maxPrice, Integer capacity, int page, int size, Date startDate, Date endDate) {
         this.type = type;
         this.guestFavorite = guestFavorite;
         this.minPrice = minPrice;
@@ -17,6 +21,8 @@ public class RoomFilterDTO {
         this.capacity = capacity;
         this.page = page;
         this.size = size;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public String getType() {
@@ -73,5 +79,21 @@ public class RoomFilterDTO {
 
     public void setSize(int size) {
         this.size = size;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 }

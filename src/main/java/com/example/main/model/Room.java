@@ -17,8 +17,6 @@ public class Room {
     private boolean guestFavorite;
     private String type;
     private int capacity;
-    private Date startOfAvailability;
-    private Date endOfAvailability;
     private double price;
     private String photoLink;
     @ElementCollection

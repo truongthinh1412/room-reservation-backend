@@ -1,19 +1,22 @@
 package com.example.main.service;
 
 import com.example.main.model.Room;
+import com.example.main.model.RoomAvailability;
 import com.example.main.model.dto.RoomFilterDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RoomService {
@@ -27,55 +30,54 @@ public class RoomService {
         Double minPrice = roomFilterDTO.getMinPrice();
         Double maxPrice = roomFilterDTO.getMaxPrice();
         Integer capacity = roomFilterDTO.getCapacity();
-        int page = roomFilterDTO.getPage();
-        int size = roomFilterDTO.getSize();
+        Date startDate = roomFilterDTO.getStartDate();
+        Date endDate = roomFilterDTO.getEndDate();
+        int pageNumber = roomFilterDTO.getPage();
+        int pageSize = roomFilterDTO.getSize();
 
-        // Create the CriteriaBuilder
-        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Room> criteriaQuery = criteriaBuilder.createQuery(Room.class);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Room> query = cb.createQuery(Room.class);
+        Root<RoomAvailability> root = query.from(RoomAvailability.class);
 
-        // Root for the Room entity
-        Root<Room> roomRoot = criteriaQuery.from(Room.class);
+        // Join Room entity
+        Join<RoomAvailability, Room> roomJoin = root.join("room");
 
-        // Create predicates (filters)
-        Predicate filters = criteriaBuilder.conjunction();  // Start with an empty conjunction (AND)
+        // Create a list of predicates for filtering
+        List<Predicate> predicates = new ArrayList<>();
 
-        if (type != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.equal(roomRoot.get("type"), type));
+        // Add filters based on method parameters
+        if (type != null && !type.isEmpty()) {
+            predicates.add(cb.equal(roomJoin.get("type"), type));
         }
-        if (guestFavorite != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.equal(roomRoot.get("guestFavorite"), guestFavorite));
+        if (capacity != null && capacity > 0) {
+            predicates.add(cb.greaterThanOrEqualTo(roomJoin.get("capacity"), capacity));
         }
-        if (minPrice != null && maxPrice != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.between(roomRoot.get("price"), minPrice, maxPrice));
-        } else if (minPrice != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.greaterThanOrEqualTo(roomRoot.get("price"), minPrice));
-        } else if (maxPrice != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.lessThanOrEqualTo(roomRoot.get("price"), maxPrice));
+        if (maxPrice != null && maxPrice > 0) {
+            predicates.add(cb.lessThanOrEqualTo(roomJoin.get("price"), maxPrice));
         }
-        if (capacity != null) {
-            filters = criteriaBuilder.and(filters, criteriaBuilder.equal(roomRoot.get("capacity"), capacity));
+        if (startDate != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("startOfAvailability"), startDate));
+        }
+        if (endDate != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("endOfAvailability"), endDate));
         }
 
-        // Apply filters to the query
-        criteriaQuery.where(filters);
+        // Apply where clause
+        query.select(roomJoin).distinct(true).where(predicates.toArray(new Predicate[0]));
 
-        // Create the pageable object
-        Pageable pageable = PageRequest.of(page, size);
-        Query query = entityManager.createQuery(criteriaQuery);
-        query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
-        query.setMaxResults(pageable.getPageSize());
+        // Execute the query to get the list of rooms with pagination
+        List<Room> rooms = entityManager.createQuery(query)
+                .setFirstResult(pageNumber * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
 
-        // Get results and return as a Page
-        long count = getCount(filters); // To get total number of records for pagination
-        return new PageImpl<>(query.getResultList(), pageable, count);
-    }
+        // Get the total count for pagination
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<RoomAvailability> countRoot = countQuery.from(RoomAvailability.class);
+        countQuery.select(cb.countDistinct(countRoot.get("room")))
+                .where(predicates.toArray(new Predicate[0]));
+        Long totalRooms = entityManager.createQuery(countQuery).getSingleResult();
 
-    private long getCount(Predicate filters) {
-        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
-        Root<Room> countRoot = countQuery.from(Room.class);
-        countQuery.select(criteriaBuilder.count(countRoot)).where(filters);
-        return entityManager.createQuery(countQuery).getSingleResult();
+        return new PageImpl<>(rooms, PageRequest.of(pageNumber, pageSize), totalRooms);
     }
 }
