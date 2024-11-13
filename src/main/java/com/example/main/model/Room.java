@@ -3,6 +3,9 @@ package com.example.main.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.Date;
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "rooms")
@@ -11,8 +14,13 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String roomNumber;
+    private boolean guestFavorite;
     private String type;
     private int capacity;
-    private boolean available;
+    private Date startOfAvailability;
+    private Date endOfAvailability;
+    private double price;
+    private String photoLink;
+    @ElementCollection
+    private List<String> photoLinkList;
 }
