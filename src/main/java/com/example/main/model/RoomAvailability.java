@@ -17,4 +17,36 @@ public class RoomAvailability {
     private Room room;
     private Date startOfAvailability;
     private Date endOfAvailability;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Room getRoom() {
+        return room;
+    }
+
+    public void setRoom(Room room) {
+        this.room = room;
+    }
+
+    public Date getStartOfAvailability() {
+        return startOfAvailability;
+    }
+
+    public void setStartOfAvailability(Date startOfAvailability) {
+        this.startOfAvailability = startOfAvailability;
+    }
+
+    public Date getEndOfAvailability() {
+        return endOfAvailability;
+    }
+
+    public void setEndOfAvailability(Date endOfAvailability) {
+        this.endOfAvailability = endOfAvailability;
+    }
 }
